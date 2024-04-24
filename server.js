@@ -2,7 +2,11 @@ const express = require('express');
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const path = require('path');
+const fs = require('fs'); // Import the file system module
 const app = express();
+
+// Create a write stream to log data
+const logStream = fs.createWriteStream('sensorData.log', { flags: 'a' });
 
 // State to hold the latest sensor data
 let sensorData = {
@@ -36,6 +40,8 @@ app.post('/pump', (req, res) => {
 parser.on('data', data => {
   const cleanData = data.trim(); // Trim whitespace and carriage returns
   console.log(cleanData);
+  logStream.write(new Date().toISOString() + " - " + cleanData + '\n');  // Log data with a timestamp
+
   const parts = cleanData.split(", "); // Split the cleaned data
   if (parts.length === 3) {
     sensorData.humidity = parts[0].split(": ")[1];
@@ -47,4 +53,11 @@ parser.on('data', data => {
 const webPort = process.env.PORT || 3000;
 app.listen(webPort, () => {
   console.log(`Server running on port ${webPort}`);
+});
+
+// Handle graceful shutdown and close the log file stream
+process.on('SIGINT', () => {
+    console.log('Closing log file stream...');
+    logStream.end();
+    process.exit();
 });
