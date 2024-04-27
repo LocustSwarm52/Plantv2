@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('temp').textContent = data.temperature;
                 document.getElementById('humidity').textContent = data.humidity;
                 document.getElementById('water').textContent = data.waterLevel;
+                document.getElementById('pumpStatus').textContent = data.pumpStatus || "Pump status: Not running";
             })
             .catch(error => console.error('Error fetching data:', error));
     }
@@ -27,7 +28,15 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ duration: duration })
         })
         .then(response => response.json())
-        .then(data => alert(data.message))
+        .then(data => {
+            alert(data.message);
+            fetchData(); // Re-fetch data to update pump status
+        })
         .catch(error => console.error('Error:', error));
     });
 });
+
+
+
+
+

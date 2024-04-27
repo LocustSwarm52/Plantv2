@@ -14,7 +14,8 @@ const logStream = fs.createWriteStream('sensorData.log', { flags: 'a' });
 let sensorData = {
   temperature: "Loading...",
   humidity: "Loading...",
-  waterLevel: "Loading..."
+  waterLevel: "Loading...",
+  pumpStatus: "Pump status: Not running"
 };
 
 const port = new SerialPort({ path: 'COM3', baudRate: 9600 });
@@ -33,16 +34,21 @@ app.post('/pump/duration', (req, res) => {
     if (err) {
       return res.status(500).json({ message: "Failed to send start command to pump" });
     }
+    console.log(`PUMP_ON command sent. Pump will run for ${req.body.duration} seconds.`);
     setTimeout(() => {
       port.write('PUMP_OFF\n', (err) => {
         if (err) {
           console.error('Failed to send stop command to pump');
         }
+        console.log('PUMP_OFF command sent.');
       });
+      sensorData.pumpStatus = `Pump was on for ${req.body.duration} seconds and is now off.`;
+      console.log(`Pump has been turned off after ${req.body.duration} seconds.`);
     }, duration);
     res.json({ message: `Pump will run for ${req.body.duration} seconds` });
   });
 });
+
 
 parser.on('data', data => {
   const cleanData = data.trim();
@@ -55,15 +61,21 @@ parser.on('data', data => {
     sensorData.temperature = parts[1].split(": ")[1];
     sensorData.waterLevel = parts[2].split(": ")[1].replace('\r', '');
   }
-});
+})
 
 const webPort = process.env.PORT || 3000;
 app.listen(webPort, () => {
   console.log(`Server running on port ${webPort}`);
+  logStream.write("\n\n--- Server Started at " + new Date().toISOString() + " ---\n");
 });
 
+
 process.on('SIGINT', () => {
-    console.log('Closing log file stream...');
-    logStream.end();
-    process.exit();
+  console.log('Server is shutting down...');
+  logStream.write("--- Server Stopped at " + new Date().toISOString() + " ---\n\n");
+  logStream.end(() => {
+      console.log('Log file stream closed.');
+      process.exit();
+  });
 });
+
