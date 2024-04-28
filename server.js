@@ -52,16 +52,20 @@ app.post('/pump/duration', (req, res) => {
 
 parser.on('data', data => {
   const cleanData = data.trim();
-  console.log(cleanData);
-  logStream.write(new Date().toISOString() + " - " + cleanData + '\n');
+  const timestamp = new Date().toISOString();
+  logStream.write(timestamp + " - " + cleanData + '\n');
 
   const parts = cleanData.split(", ");
   if (parts.length === 3) {
-    sensorData.humidity = parts[0].split(": ")[1];
-    sensorData.temperature = parts[1].split(": ")[1];
-    sensorData.waterLevel = parts[2].split(": ")[1].replace('\r', '');
+    sensorData = {
+      humidity: parts[0].split(": ")[1],
+      temperature: parts[1].split(": ")[1],
+      waterLevel: parts[2].split(": ")[1].replace('\r', ''),
+      timestamp: timestamp
+    };
   }
-})
+});
+
 
 const webPort = process.env.PORT || 3000;
 app.listen(webPort, () => {
